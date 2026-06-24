@@ -12,27 +12,30 @@ dependency injection container, or command framework.
 - Paper API `26.1.2`
 - Gradle 9.x
 
-`mol` depends on Paper as `compileOnly`. Consumer plugins should compile against Paper and package `mol` into their final plugin jar with Shadow or an
-equivalent packaging step.
+`mol` depends on Paper as `compileOnly`. Consumer plugins should compile against Paper and package `mol` into their final plugin jar.
 
 ## Installation
 
-After `mol` is published through Sonatype Central Portal:
+`mol` is published through Sonatype Central Portal:
 
 ```gradle
 repositories {
   mavenCentral()
-  maven {
-    url = uri("https://central.sonatype.com/repository/maven-snapshots/")
-  }
+  maven { url = uri("https://central.sonatype.com/repository/maven-snapshots/") }
 }
 
 dependencies {
-  compileOnly("io.github.tetratheta:mol:0.0.1")
+  compileOnly("io.papermc.paper:paper-api:26.1.2.build.+")
+  implementation("io.github.tetratheta:mol:0.0.1")
+}
+
+jar {
+  duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+  from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
 }
 ```
 
-For a runnable Paper plugin jar, include `mol` in the shaded output. Keep Paper itself as `compileOnly`.
+For a runnable Paper plugin jar, include `mol` in the output. Keep Paper itself as `compileOnly`.
 
 ## What `mol` Provides
 
