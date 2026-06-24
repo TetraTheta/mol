@@ -1,0 +1,120 @@
+plugins {
+  id 'java-library'
+  id 'maven-publish'
+  id 'org.jreleaser' version '1.22.0'
+}
+
+group = 'io.github.tetratheta'
+version = '0.0.1-SNAPSHOT'
+
+def repoUrl = 'https://github.com/TetraTheta/mol'
+def targetJavaVersion = 25
+def verPaper = '26.1.2.build.+'
+
+repositories {
+  mavenCentral()
+  maven { url = uri('https://repo.papermc.io/repository/maven-public/') }
+}
+
+dependencies {
+  compileOnly("io.papermc.paper:paper-api:$verPaper")
+  testImplementation 'org.junit.jupiter:junit-jupiter'
+  testImplementation platform('org.junit:junit-bom:6.0.0')
+  testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+java {
+  def javaVersion = JavaVersion.toVersion(targetJavaVersion)
+  sourceCompatibility = javaVersion
+  targetCompatibility = javaVersion
+
+  withSourcesJar()
+  withJavadocJar()
+
+  if (JavaVersion.current() < javaVersion) {
+    toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+  }
+}
+
+tasks.withType(JavaCompile).configureEach {
+  options.encoding = 'UTF-8'
+  options.release.set(targetJavaVersion)
+}
+
+tasks.withType(Javadoc).configureEach {
+  options.encoding = 'UTF-8'
+  options.addStringOption('Xdoclint:none', '-quiet')
+}
+
+test {
+  useJUnitPlatform()
+}
+
+publishing {
+  publications {
+    mavenJava(MavenPublication) {
+      from components.java
+
+      pom {
+        name = 'mol'
+        description = 'Paper plugin utility library for TetraTheta plugins'
+        url = repoUrl
+
+        licenses {
+          license {
+            name = 'MIT License'
+            url = 'https://opensource.org/licenses/MIT'
+          }
+        }
+        developers {
+          developer {
+            id = 'tetratheta'
+            name = 'TetraTheta'
+            email = '37061801+TetraTheta@users.noreply.github.com'
+          }
+        }
+        scm {
+          connection = 'scm:git:git://github.com/TetraTheta/mol.git'
+          developerConnection = 'scm:git:ssh://git@github.com:TetraTheta/mol.git'
+          url = repoUrl
+        }
+      }
+    }
+  }
+  repositories {
+    maven {
+      url = layout.buildDirectory.dir('staging-deploy')
+    }
+  }
+}
+
+jreleaser {
+  signing {
+    pgp {
+      active = 'ALWAYS'
+      armored = true
+    }
+  }
+  deploy {
+    maven {
+      mavenCentral {
+        sonatype {
+          active = 'RELEASE'
+          url = 'https://central.sonatype.com/api/v1/publisher'
+          stagingRepository('build/staging-deploy')
+        }
+      }
+      nexus2 {
+        'maven-central' {
+          active = 'SNAPSHOT'
+          snapshotUrl = 'https://central.sonatype.com/repository/maven-snapshots/'
+          applyMavenCentralRules = true
+          snapshotSupported = true
+          closeRepository = true
+          releaseRepository = false
+          stagingRepository('build/staging-deploy')
+        }
+      }
+    }
+  }
+}
